@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.kogungor.mailrem</string>
+	<key>CFBundleName</key>
+	<string>MailRem</string>
+	<key>CFBundleDisplayName</key>
+	<string>MailRem</string>
+	<key>CFBundleExecutable</key>
+	<string>MailRem</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>2.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>MailRem reads the subject, sender and link of the message you select in Mail so it can create a reminder for it.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>MailRem adds the Mail messages you choose to your Reminders lists.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>MailRem adds the Mail messages you choose to your Reminders lists.</string>
+</dict>
+</plist>
