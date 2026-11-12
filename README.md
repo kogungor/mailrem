@@ -16,9 +16,20 @@ Each reminder gets the message subject as its title. Its note holds the sender a
 
 ## Install
 
+### Download
+
 1. Download `MailRem-<version>.dmg` from the [latest release](https://github.com/kogungor/mailrem/releases/latest).
 2. Open the disk image and drag **MailRem** to **Applications**.
 3. Open MailRem from Applications.
+
+The app is signed and notarized by Apple, so it opens without a security warning.
+
+### Homebrew
+
+```bash
+brew tap kogungor/mailrem https://github.com/kogungor/mailrem
+brew install --cask mailrem
+```
 
 ## Permissions
 
@@ -57,9 +68,17 @@ scripts/package.sh    # builds dist/MailRem-<version>.dmg
 
 `build.sh` signs with a "Developer ID Application" certificate when one is in the keychain and falls back to an ad-hoc signature otherwise. To notarize the disk image, store credentials once with `xcrun notarytool store-credentials mailrem-notary` and run `NOTARY_PROFILE=mailrem-notary scripts/package.sh`.
 
+### Releasing
+
+1. Set the new version in `Resources/Info.plist`.
+2. Run `NOTARY_PROFILE=<profile> scripts/package.sh`.
+3. Update `version` and `sha256` in `Casks/mailrem.rb` with the values the script prints.
+4. Commit, tag `v<version>` and attach the disk image to a GitHub release.
+
 ### Layout
 
 - `Sources/MailRem/`: the app (Swift, AppKit)
 - `Resources/`: `Info.plist`, entitlements and the app icon
 - `scripts/build.sh`, `scripts/package.sh`: build and packaging
 - `scripts/make-icon.swift`: regenerates `Resources/AppIcon.icns`
+- `Casks/mailrem.rb`: Homebrew cask
