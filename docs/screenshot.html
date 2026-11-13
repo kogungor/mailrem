@@ -1,0 +1,273 @@
+<!doctype html>
+<!--
+  Source of docs/screenshot.png. It is an illustration with made-up messages,
+  not a capture of a real mailbox. Render it at 1280x800, scale factor 2:
+
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
+    --hide-scrollbars --force-device-scale-factor=2 --window-size=1280,800 \
+    --screenshot=docs/screenshot.png "file://$PWD/docs/screenshot.html"
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MailRem screenshot</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1280px; height: 800px; overflow: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-size: 13px;
+    color: #1d1d1f;
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(900px 600px at 12% 8%, #7fb4ff 0%, transparent 60%),
+      radial-gradient(900px 700px at 92% 96%, #ffb26b 0%, transparent 58%),
+      linear-gradient(135deg, #2f6fe0 0%, #5b53d6 48%, #c95a9a 100%);
+  }
+
+  /* Menu bar */
+  .menubar {
+    position: absolute; inset: 0 0 auto 0; height: 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    background: rgba(255, 255, 255, 0.34);
+    backdrop-filter: blur(20px);
+    color: #111; font-size: 13px;
+  }
+  .menubar .left, .menubar .right { display: flex; align-items: center; gap: 18px; }
+  .menubar .app { font-weight: 700; }
+  .menubar .status {
+    display: flex; align-items: center; justify-content: center;
+    width: 30px; height: 22px; border-radius: 5px;
+  }
+  .menubar svg { display: block; }
+
+  /* Mail window */
+  .window {
+    position: absolute; left: 90px; top: 74px; width: 1100px; height: 660px;
+    border-radius: 12px; overflow: hidden;
+    background: #fff;
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.28), 0 30px 70px rgba(0, 0, 0, 0.42);
+    display: grid; grid-template-columns: 210px 350px 1fr;
+  }
+
+  .sidebar { background: #e9e8ed; padding: 14px 10px; border-right: 1px solid #d5d4da; }
+  .lights { display: flex; gap: 8px; padding: 2px 6px 20px; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .lights i:nth-child(1) { background: #fe5f57; }
+  .lights i:nth-child(2) { background: #febc2e; }
+  .lights i:nth-child(3) { background: #28c840; }
+  .sidebar h4 { font-size: 11px; font-weight: 600; color: #8a8a8f; padding: 10px 8px 5px; }
+  .sidebar .row {
+    display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px;
+    border-radius: 6px; color: #2c2c2e;
+  }
+  .sidebar .row.on { background: #d0cfd6; }
+  .sidebar .row .glyph { width: 16px; height: 16px; flex: none; }
+  .sidebar .row span.count { margin-left: auto; color: #8a8a8f; font-size: 12px; }
+
+  .list { border-right: 1px solid #e3e3e6; display: flex; flex-direction: column; }
+  .toolbar {
+    height: 52px; flex: none; display: flex; align-items: center; padding: 0 16px;
+    border-bottom: 1px solid #ececef;
+  }
+  .toolbar .title { font-size: 15px; font-weight: 700; }
+  .toolbar .sub { font-size: 11px; color: #8a8a8f; margin-top: 1px; }
+  .messages { padding: 6px 8px; }
+  .msg { padding: 9px 12px 10px; border-radius: 8px; position: relative; }
+  .msg + .msg::before {
+    content: ""; position: absolute; left: 12px; right: 12px; top: 0; height: 1px; background: #ececef;
+  }
+  .msg.sel::before, .msg.sel + .msg::before { display: none; }
+  .msg .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .msg .from { font-weight: 600; }
+  .msg .time { font-size: 12px; color: #8a8a8f; }
+  .msg .subject { margin-top: 1px; }
+  .msg .preview {
+    margin-top: 1px; color: #8a8a8f; font-size: 12.5px; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .msg.unread .from::before {
+    content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: #0a7aff; margin-right: 6px; position: relative; top: -1px;
+  }
+  .msg.sel { background: #0a64dc; color: #fff; }
+  .msg.sel .time, .msg.sel .preview { color: rgba(255, 255, 255, 0.82); }
+
+  .reader { display: flex; flex-direction: column; }
+  .reader .toolbar { justify-content: flex-end; gap: 22px; color: #6e6e73; }
+  .reader .body { padding: 22px 28px; }
+  .head { display: flex; gap: 12px; align-items: center; padding-bottom: 16px; border-bottom: 1px solid #ececef; }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%; flex: none;
+    background: linear-gradient(#a9b3c4, #7f8aa0); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px;
+  }
+  .head .who { font-weight: 600; }
+  .head .subj { margin-top: 1px; }
+  .head .to { margin-top: 1px; color: #8a8a8f; font-size: 12px; }
+  .head .when { margin-left: auto; align-self: flex-start; color: #8a8a8f; font-size: 12px; }
+  .text { padding-top: 18px; font-size: 14px; line-height: 1.55; color: #2c2c2e; }
+  .text p + p { margin-top: 12px; }
+
+  /* The MailRem menu */
+  .menu {
+    position: absolute; left: 600px; top: 244px; width: 214px; padding: 5px;
+    border-radius: 8px;
+    background: #f6f6f8;
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.22), 0 12px 32px rgba(0, 0, 0, 0.30);
+    font-size: 13px;
+  }
+  .menu .item { display: flex; align-items: center; gap: 8px; height: 24px; padding: 0 10px; border-radius: 5px; }
+  .menu .item.header { color: #a5a5aa; }
+  .menu .item.on { background: #0a64dc; color: #fff; }
+  .menu .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+  .pointer { position: absolute; left: 726px; top: 380px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35)); }
+  .keys {
+    position: absolute; left: 0; right: 0; bottom: 22px; text-align: center;
+    color: #fff; font-size: 14px; font-weight: 500; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+  .keys kbd {
+    font: inherit; font-weight: 600; padding: 2px 8px; margin: 0 2px; border-radius: 6px;
+    background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  }
+</style>
+</head>
+<body>
+
+<div class="menubar">
+  <div class="left">
+    <span class="app">Mail</span><span>File</span><span>Edit</span><span>View</span>
+    <span>Mailbox</span><span>Message</span><span>Format</span><span>Window</span><span>Help</span>
+  </div>
+  <div class="right">
+    <span class="status" title="MailRem">
+      <svg width="22" height="16" viewBox="0 0 22 16" fill="none" stroke="#111" stroke-width="1.4"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13.2 3H3.2A1.7 1.7 0 0 0 1.5 4.7v7.6A1.7 1.7 0 0 0 3.2 14h12.6a1.7 1.7 0 0 0 1.7-1.7V8.1"/>
+        <path d="M1.9 4.3l6.5 4.9a1.8 1.8 0 0 0 2.2 0l3.3-2.5"/>
+        <circle cx="18" cy="3.6" r="2.6" fill="#111" stroke="none"/>
+      </svg>
+    </span>
+    <span>Thu 12 Nov&nbsp;&nbsp;10:24</span>
+  </div>
+</div>
+
+<div class="window">
+  <div class="sidebar">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <h4>Favorites</h4>
+    <div class="row on">
+      <svg class="glyph" viewBox="0 0 16 16" fill="none" stroke="#0a64dc" stroke-width="1.4" stroke-linejoin="round"><path d="M2 9.5 3.6 3h8.8L14 9.5V13H2z"/><path d="M2 9.5h3.6l.8 1.6h3.2l.8-1.6H14"/></svg>
+      Inbox <span class="count">4</span>
+    </div>
+    <div class="row">
+      <svg class="glyph" viewBox="0 0 16 16" fill="none" stroke="#0a64dc" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M4 14V2.5"/><path d="M4 3h8l-1.8 2.8L12 8.6H4"/></svg>
+      Flagged
+    </div>
+    <div class="row">
+      <svg class="glyph" viewBox="0 0 16 16" fill="none" stroke="#0a64dc" stroke-width="1.4" stroke-linejoin="round"><path d="M4 2h5.5L12 4.6V14H4z"/><path d="M9.3 2v2.8H12"/></svg>
+      Drafts
+    </div>
+    <div class="row">
+      <svg class="glyph" viewBox="0 0 16 16" fill="none" stroke="#0a64dc" stroke-width="1.4" stroke-linejoin="round"><path d="M14 2 2 7l4.6 1.8L8.4 14z"/><path d="M14 2 6.6 8.8"/></svg>
+      Sent
+    </div>
+    <h4>Mailboxes</h4>
+    <div class="row">
+      <svg class="glyph" viewBox="0 0 16 16" fill="none" stroke="#0a64dc" stroke-width="1.4" stroke-linejoin="round"><path d="M2 4h4l1.4 1.6H14V13H2z"/></svg>
+      Receipts
+    </div>
+    <div class="row">
+      <svg class="glyph" viewBox="0 0 16 16" fill="none" stroke="#0a64dc" stroke-width="1.4" stroke-linejoin="round"><path d="M2 4h4l1.4 1.6H14V13H2z"/></svg>
+      Travel
+    </div>
+    <div class="row">
+      <svg class="glyph" viewBox="0 0 16 16" fill="none" stroke="#0a64dc" stroke-width="1.4" stroke-linejoin="round"><path d="M2.5 5.5h11V14h-11z"/><path d="M2 3h12v2.5H2z"/><path d="M6.4 8.2h3.2"/></svg>
+      Archive
+    </div>
+  </div>
+
+  <div class="list">
+    <div class="toolbar">
+      <div><div class="title">Inbox</div><div class="sub">7 messages, 4 unread</div></div>
+    </div>
+    <div class="messages">
+      <div class="msg unread">
+        <div class="top"><span class="from">Priya Raman</span><span class="time">10:12</span></div>
+        <div class="subject">Re: Design handoff</div>
+        <div class="preview">Thanks for the files. I left two comments on the settings screen, nothing blocking.</div>
+      </div>
+      <div class="msg sel">
+        <div class="top"><span class="from">Dana Whitfield</span><span class="time">09:47</span></div>
+        <div class="subject">Q4 budget review</div>
+        <div class="preview">Hi, I've attached the draft numbers for the fourth quarter. Could you look them over before Thursday's meeting?</div>
+      </div>
+      <div class="msg unread">
+        <div class="top"><span class="from">Harbor Street Dental</span><span class="time">09:05</span></div>
+        <div class="subject">Appointment reminder</div>
+        <div class="preview">This is a reminder of your check-up on Monday at 14:30. Reply to this message to reschedule.</div>
+      </div>
+      <div class="msg unread">
+        <div class="top"><span class="from">Marco Bellini</span><span class="time">Yesterday</span></div>
+        <div class="subject">Lunch on Friday?</div>
+        <div class="preview">There's a new place near the station I've been meaning to try. Are you free around one?</div>
+      </div>
+      <div class="msg">
+        <div class="top"><span class="from">Tidewater Travel</span><span class="time">Yesterday</span></div>
+        <div class="subject">Your itinerary for Lisbon</div>
+        <div class="preview">Your booking is confirmed. You will find your flight and hotel details below.</div>
+      </div>
+      <div class="msg unread">
+        <div class="top"><span class="from">Alex Chen</span><span class="time">Sunday</span></div>
+        <div class="subject">Notes from today's sync</div>
+        <div class="preview">Three action items came out of the call. I've listed them with owners at the end.</div>
+      </div>
+      <div class="msg">
+        <div class="top"><span class="from">Lumen Utilities</span><span class="time">Saturday</span></div>
+        <div class="subject">Your November statement is ready</div>
+        <div class="preview">Your latest statement is now available in your account.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reader">
+    <div class="toolbar"></div>
+    <div class="body">
+      <div class="head">
+        <div class="avatar">DW</div>
+        <div>
+          <div class="who">Dana Whitfield</div>
+          <div class="subj">Q4 budget review</div>
+          <div class="to">To: Sam Okafor</div>
+        </div>
+        <div class="when">Today at 09:47</div>
+      </div>
+      <div class="text">
+        <p>Hi Sam,</p>
+        <p>I've attached the draft numbers for the fourth quarter. Could you look them over before Thursday's meeting? The travel line is the one I'm least sure about.</p>
+        <p>If anything looks off, send me a note and I'll update the sheet the same day.</p>
+        <p>Thanks,<br>Dana</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="menu">
+  <div class="item header">Send to Reminders</div>
+  <div class="item"><span class="dot" style="background:#ff9f0a"></span>Family</div>
+  <div class="item"><span class="dot" style="background:#30b94d"></span>Home</div>
+  <div class="item"><span class="dot" style="background:#0a84ff"></span>Reminders</div>
+  <div class="item"><span class="dot" style="background:#bf5af2"></span>Shopping</div>
+  <div class="item on"><span class="dot" style="background:#ff453a; box-shadow:0 0 0 1px rgba(255,255,255,.75)"></span>Work</div>
+</div>
+
+<svg class="pointer" width="18" height="24" viewBox="0 0 18 24">
+  <path d="M1.5 1.5v18l4.6-4.3 3 7 3-1.3-3-6.9h6.4z" fill="#111" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>
+</svg>
+
+<div class="keys">Hold <kbd>Option</kbd> and right-click a message, then pick a list</div>
+
+</body>
+</html>

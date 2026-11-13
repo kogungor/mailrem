@@ -4,11 +4,17 @@ Send the message you have selected in Apple Mail to a Reminders list in one step
 
 MailRem is a small menu bar app for macOS. It does not depend on any other software.
 
+![The MailRem menu open over a message in Mail, listing Reminders lists](docs/screenshot.png)
+
+*Illustration with sample messages.*
+
 - **Option + right-click** a message in Mail: a menu with your Reminders lists opens next to the pointer. Pick a list and the message is added to it as a reminder.
 - **Control-Option-R** in Mail: the same menu opens for the selected message; type the first letters of a list and press Return.
 - **Menu bar icon:** the same lists are available from the MailRem menu at any time.
 
 Each reminder gets the message subject as its title. Its note holds the sender and a link that opens the message in Mail.
+
+macOS does not let apps add items to Mail's own right-click menu. That is why MailRem opens a menu of its own when you hold Option, instead of appearing inside Mail's menu.
 
 ## Requirements
 
@@ -47,6 +53,21 @@ On first launch macOS asks for three permissions:
 The Mail prompt appears while Mail is running. If you did not see it, open Mail and bring it to the front once.
 
 To change a permission later, open **System Settings > Privacy & Security** and look under **Accessibility**, **Reminders** or **Automation**.
+
+## Privacy
+
+MailRem works entirely on your Mac.
+
+- It has no account, no analytics and no server of its own.
+- From Mail it reads only the subject, sender and message ID of the messages you send to Reminders, at the moment you send them. It never reads message bodies or attachments.
+- The Accessibility permission is used for one thing: noticing a right-click made with Option held down while Mail is the frontmost app. MailRem does not watch the keyboard and ignores clicks in other apps.
+- Its only network request is the update check, which asks GitHub for the latest release of this repository. Nothing about you or your mail is sent. Switch off **Check for Updates Automatically** to stop it.
+
+## Good to know
+
+- The link in a reminder opens the message on a Mac whose Mail has that message. It may stop working if the message is deleted.
+- Reminders sync through iCloud as usual, so they also appear on your iPhone and iPad. MailRem itself is for macOS only.
+- The keyboard shortcut is fixed to Control-Option-R.
 
 ## Options
 
@@ -98,3 +119,8 @@ scripts/package.sh    # builds dist/MailRem-<version>.dmg
 - `scripts/build.sh`, `scripts/package.sh`: build and packaging
 - `scripts/make-icon.swift`: regenerates `Resources/AppIcon.icns`
 - `Casks/mailrem.rb`: Homebrew cask
+- `docs/`: the README illustration and the HTML it is rendered from
+
+## License
+
+MailRem is released under the [MIT License](LICENSE).
