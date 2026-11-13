@@ -6,6 +6,7 @@ import ServiceManagement
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let reminders = RemindersService()
     private let mail = MailBridge()
+    private let updater = Updater()
 
     private var statusItem: NSStatusItem!
     private var hotKey: HotKey!
@@ -35,6 +36,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         startClickTap(promptIfNeeded: true)
         frontmostApplicationChanged()
         requestMailPermissionIfPossible()
+
+        updater.onChange = { [weak self] in self?.refreshStatusIcon() }
+        updater.onInstallFailure = { [weak self] error in self?.updateFailed(error) }
+        updater.startAutomaticChecks()
     }
 
     private func showWelcomeIfNeeded() {
@@ -199,6 +204,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let image = NSImage(systemSymbolName: "envelope.badge", accessibilityDescription: "MailRem")
         image?.isTemplate = true
         statusItem.button?.image = image
+        refreshStatusIcon()
 
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -206,9 +212,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.menu = menu
     }
 
+    /// The menu bar icon turns orange while an update is waiting.
+    private func refreshStatusIcon() {
+        guard let button = statusItem?.button else { return }
+        if let update = updater.available {
+            button.contentTintColor = .systemOrange
+            button.toolTip = "MailRem \(update.version) is available"
+        } else {
+            button.contentTintColor = nil
+            button.toolTip = "MailRem"
+        }
+    }
+
     func menuNeedsUpdate(_ menu: NSMenu) {
         guard menu === statusItem.menu else { return }
         menu.removeAllItems()
+
+        if let update = updater.available {
+            let item = makeItem(updater.isInstalling ? "Updating…" : "Update to MailRem \(update.version)",
+                                #selector(installUpdate))
+            item.isEnabled = !updater.isInstalling
+            item.image = NSImage(systemSymbolName: "arrow.down.circle.fill", accessibilityDescription: nil)
+            menu.addItem(item)
+            menu.addItem(.separator())
+        }
 
         addListItems(to: menu, header: "Send Selected Message To")
         menu.addItem(.separator())
@@ -227,6 +254,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let login = makeItem("Launch at Login", #selector(toggleLaunchAtLogin))
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
+
+        menu.addItem(.separator())
+        if updater.available == nil {
+            menu.addItem(makeItem("Check for Updates…", #selector(checkForUpdates)))
+        }
+        let automaticChecks = makeItem("Check for Updates Automatically", #selector(toggleAutomaticUpdateChecks))
+        automaticChecks.state = Settings.automaticUpdateChecks ? .on : .off
+        menu.addItem(automaticChecks)
 
         menu.addItem(.separator())
         menu.addItem(makeItem("About MailRem", #selector(showAbout)))
@@ -264,6 +299,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    @objc private func installUpdate() {
+        updater.install()
+    }
+
+    @objc private func checkForUpdates() {
+        updater.check { result in
+            switch result {
+            case .success(let update?):
+                HUD.shared.show("MailRem \(update.version) is available")
+            case .success(nil):
+                HUD.shared.show("MailRem is up to date")
+            case .failure:
+                HUD.shared.show("Could not check for updates")
+            }
+        }
+    }
+
+    @objc private func toggleAutomaticUpdateChecks() {
+        Settings.automaticUpdateChecks.toggle()
+        updater.startAutomaticChecks()
+    }
+
+    private func updateFailed(_ error: Error) {
+        if case UpdateError.notWritable = error {
+            // The app cannot replace itself here (for example it was opened
+            // straight from the disk image), so send the user to the download.
+            HUD.shared.show("Opening the download page…")
+            NSWorkspace.shared.open(Updater.latestReleasePage)
+        } else {
+            HUD.shared.show("Could not install the update")
+        }
+    }
+
     @objc private func openAccessibilitySettings() {
         openSettings("Privacy_Accessibility")
     }
@@ -282,8 +350,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func showAbout() {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        paragraph.paragraphSpacing = 8
+
+        let primary: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 12),
+            .foregroundColor: NSColor.labelColor,
+            .paragraphStyle: paragraph,
+        ]
+        var secondary = primary
+        secondary[.font] = NSFont.systemFont(ofSize: 11)
+        secondary[.foregroundColor] = NSColor.secondaryLabelColor
+        var link = secondary
+        link[.link] = URL(string: "https://github.com/kogungor/mailrem")
+
+        let credits = NSMutableAttributedString()
+        credits.append(NSAttributedString(
+            string: "Send the message you have selected in Mail to a Reminders list.\n",
+            attributes: primary))
+        credits.append(NSAttributedString(
+            string: "In Mail, Option + right-click a message or press Control-Option-R, then pick a list.\n",
+            attributes: secondary))
+        credits.append(NSAttributedString(string: "github.com/kogungor/mailrem", attributes: link))
+
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.orderFrontStandardAboutPanel(nil)
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .credits: credits,
+            .version: "", // hide the build number; the marketing version is enough
+        ])
     }
 
     @objc private func quit() {

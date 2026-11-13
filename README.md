@@ -50,11 +50,24 @@ To change a permission later, open **System Settings > Privacy & Security** and 
 
 ## Options
 
-The MailRem menu in the menu bar has three switches:
+The MailRem menu in the menu bar has these switches:
 
 - **Option + Right-Click Menu in Mail**
 - **Control-Option-R in Mail**
 - **Launch at Login**
+- **Check for Updates Automatically**
+
+## Updates
+
+MailRem checks GitHub for a new release when it starts and every six hours. When one is available the menu bar icon turns orange and **Update to MailRem <version>** appears at the top of the menu. Choosing it downloads the new version, replaces the app and reopens it.
+
+An update is only installed if it is signed by the same developer as the version you are running. You can also choose **Check for Updates…** at any time, or switch automatic checks off.
+
+To install updates without asking, run:
+
+```bash
+defaults write com.kogungor.mailrem autoInstallUpdates -bool YES
+```
 
 ## Uninstall
 
@@ -76,7 +89,7 @@ scripts/package.sh    # builds dist/MailRem-<version>.dmg
 1. Set the new version in `Resources/Info.plist`.
 2. Run `NOTARY_PROFILE=<profile> scripts/package.sh`.
 3. Update `version` and `sha256` in `Casks/mailrem.rb` with the values the script prints.
-4. Commit, tag `v<version>` and attach the disk image to a GitHub release.
+4. Commit, tag `v<version>` and attach the disk image to a GitHub release. Installed copies find the update from the release tag and its `.dmg` asset.
 
 ### Layout
 

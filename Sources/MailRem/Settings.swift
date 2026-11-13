@@ -11,12 +11,16 @@ enum Settings {
         static let optionRightClick = "optionRightClickEnabled"
         static let shortcut = "shortcutEnabled"
         static let welcomed = "didShowWelcome"
+        static let automaticUpdateChecks = "automaticUpdateChecks"
+        static let autoInstallUpdates = "autoInstallUpdates"
     }
 
     static func registerDefaults() {
         defaults.register(defaults: [
             Key.optionRightClick: true,
             Key.shortcut: true,
+            Key.automaticUpdateChecks: true,
+            Key.autoInstallUpdates: false,
         ])
     }
 
@@ -35,5 +39,17 @@ enum Settings {
     static var didShowWelcome: Bool {
         get { defaults.bool(forKey: Key.welcomed) }
         set { defaults.set(newValue, forKey: Key.welcomed) }
+    }
+
+    /// Look for a newer release on GitHub at launch and every few hours.
+    static var automaticUpdateChecks: Bool {
+        get { defaults.bool(forKey: Key.automaticUpdateChecks) }
+        set { defaults.set(newValue, forKey: Key.automaticUpdateChecks) }
+    }
+
+    /// Install an update as soon as an automatic check finds one. Off by
+    /// default and not shown in the menu; set it with `defaults write`.
+    static var autoInstallUpdates: Bool {
+        defaults.bool(forKey: Key.autoInstallUpdates)
     }
 }

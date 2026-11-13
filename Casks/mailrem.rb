@@ -7,6 +7,7 @@ cask "mailrem" do
   desc "Send the selected Apple Mail message to a Reminders list"
   homepage "https://github.com/kogungor/mailrem"
 
+  auto_updates true
   depends_on macos: ">= :ventura"
 
   app "MailRem.app"
