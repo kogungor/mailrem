@@ -13,6 +13,8 @@ MailRem is a small menu bar app for macOS. It does not depend on any other softw
 - **Due dates:** the menu also has **Due Today**, **Due Tomorrow** and **Due Next Week**. Point at one and pick a list to add the reminder with that date.
 - **Menu bar icon:** the same lists are available from the MailRem menu at any time.
 
+The menu follows the Reminders sidebar: lists are in the same order, and the lists of a folder are shown under the folder's name.
+
 Each reminder gets the message subject as its title. Its note holds the sender and a link that opens the message in Mail.
 
 macOS does not let apps add items to Mail's own right-click menu. That is why MailRem opens a menu of its own when you hold Option, instead of appearing inside Mail's menu.
@@ -70,6 +72,7 @@ MailRem works entirely on your Mac.
 - Reminders sync through iCloud as usual, so they also appear on your iPhone and iPad. MailRem itself is for macOS only.
 - A due date is a day without a time. **Due Next Week** means the coming Monday.
 - The keyboard shortcut is fixed to Control-Option-R.
+- Apple has no public way for apps to read Reminders folders, so MailRem asks the system framework that the Reminders app itself uses. If a macOS update changes it, the menu shows all lists sorted by name instead, and sending keeps working.
 
 ## Options
 

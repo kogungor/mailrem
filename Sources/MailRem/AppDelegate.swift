@@ -36,7 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // nothing here shows a system prompt on its own.
         let isFirstLaunch = !Settings.didShowWelcome
         Settings.didShowWelcome = true
-        log.notice("Reminders access granted: \(self.reminders.hasAccess, privacy: .public), lists: \(self.reminders.lists().count, privacy: .public)")
+        let sections = reminders.sections()
+        log.notice("Reminders access granted: \(self.reminders.hasAccess, privacy: .public), lists: \(sections.reduce(0) { $0 + $1.lists.count }, privacy: .public), folders: \(sections.filter { $0.folderName != nil }.count, privacy: .public)")
         startClickTap(promptIfNeeded: false)
         if isFirstLaunch || needsSetup {
             showSetup()
@@ -198,28 +199,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return
         }
 
-        let lists = reminders.lists()
-        guard !lists.isEmpty else {
+        let sections = reminders.sections()
+        guard !sections.isEmpty else {
             let item = NSMenuItem(title: "No Reminders Lists", action: nil, keyEquivalent: "")
             item.isEnabled = false
             menu.addItem(item)
             return
         }
 
-        for list in lists {
-            menu.addItem(listItem(for: list, due: nil))
-        }
+        addLists(in: sections, to: menu, due: nil)
         menu.addItem(.separator())
         for due in DueDate.allCases {
             let item = NSMenuItem(title: due.title, action: nil, keyEquivalent: "")
             item.image = NSImage(systemSymbolName: "calendar", accessibilityDescription: nil)
             let submenu = NSMenu()
             submenu.autoenablesItems = false
-            for list in lists {
-                submenu.addItem(listItem(for: list, due: due))
-            }
+            addLists(in: sections, to: submenu, due: due)
             item.submenu = submenu
             menu.addItem(item)
+        }
+    }
+
+    /// Adds the lists as they are arranged in Reminders: a folder is a dimmed
+    /// title with its lists indented below it.
+    private func addLists(in sections: [ListSection], to menu: NSMenu, due: DueDate?) {
+        for section in sections {
+            if let folderName = section.folderName {
+                let folderItem = NSMenuItem(title: folderName, action: nil, keyEquivalent: "")
+                folderItem.isEnabled = false
+                folderItem.image = NSImage(systemSymbolName: "folder", accessibilityDescription: nil)
+                menu.addItem(folderItem)
+            }
+            for list in section.lists {
+                let item = listItem(for: list, due: due)
+                item.indentationLevel = section.folderName == nil ? 0 : 1
+                menu.addItem(item)
+            }
         }
     }
 
