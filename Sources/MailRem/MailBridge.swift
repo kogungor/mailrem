@@ -35,6 +35,27 @@ final class MailBridge {
         NSRunningApplication.runningApplications(withBundleIdentifier: Self.bundleID).first?.activate(options: [])
     }
 
+    /// Opens Mail if it is not running yet.
+    func launch() {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.bundleID) else { return }
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    /// Whether this app may control Mail, without showing a prompt. macOS can
+    /// only tell while Mail is running. This can take a moment, so call it off
+    /// the main thread.
+    func permissionState() -> PermissionState {
+        guard isRunning else { return .unavailable }
+        let target = NSAppleEventDescriptor(bundleIdentifier: Self.bundleID)
+        let status = AEDeterminePermissionToAutomateTarget(target.aeDesc, typeWildCard, typeWildCard, false)
+        switch Int(status) {
+        case Int(noErr): return .granted
+        case -1744: return .notDetermined // errAEEventWouldRequireUserConsent
+        case -600: return .unavailable    // procNotFound: Mail quit in the meantime
+        default: return .denied
+        }
+    }
+
     /// Asks macOS for permission to control Mail, showing the system prompt if it
     /// has not been answered yet. Mail must be running. Safe to call repeatedly.
     func requestPermission(completion: @escaping (Bool) -> Void) {

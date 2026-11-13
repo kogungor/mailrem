@@ -13,6 +13,11 @@ final class RemindersService {
         return status == .authorized
     }
 
+    var accessState: PermissionState {
+        if hasAccess { return .granted }
+        return EKEventStore.authorizationStatus(for: .reminder) == .notDetermined ? .notDetermined : .denied
+    }
+
     /// Asks macOS for access to Reminders. Shows the system prompt the first time.
     func requestAccess(completion: @escaping (Bool) -> Void) {
         let done: (Bool, Error?) -> Void = { granted, _ in
@@ -33,8 +38,9 @@ final class RemindersService {
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 
-    /// Creates one reminder per message in the given list. Returns how many were added.
-    func add(_ messages: [MailMessage], toListWithIdentifier identifier: String) throws -> Int {
+    /// Creates one reminder per message in the given list, due on the given day
+    /// if there is one. Returns how many were added.
+    func add(_ messages: [MailMessage], toListWithIdentifier identifier: String, due: DueDate? = nil) throws -> Int {
         guard let list = store.calendar(withIdentifier: identifier) else {
             throw RemindersError.listNotFound
         }
@@ -43,6 +49,7 @@ final class RemindersService {
             reminder.calendar = list
             reminder.title = message.subject.isEmpty ? "(no subject)" : message.subject
             reminder.notes = "From: \(message.sender)\n\(message.link)"
+            reminder.dueDateComponents = due?.components()
             try store.save(reminder, commit: false)
         }
         try store.commit()

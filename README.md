@@ -10,6 +10,7 @@ MailRem is a small menu bar app for macOS. It does not depend on any other softw
 
 - **Option + right-click** a message in Mail: a menu with your Reminders lists opens next to the pointer. Pick a list and the message is added to it as a reminder.
 - **Control-Option-R** in Mail: the same menu opens for the selected message; type the first letters of a list and press Return.
+- **Due dates:** the menu also has **Due Today**, **Due Tomorrow** and **Due Next Week**. Point at one and pick a list to add the reminder with that date.
 - **Menu bar icon:** the same lists are available from the MailRem menu at any time.
 
 Each reminder gets the message subject as its title. Its note holds the sender and a link that opens the message in Mail.
@@ -42,7 +43,7 @@ Recent versions of Homebrew only load casks from taps you have marked as trusted
 
 ## Permissions
 
-On first launch macOS asks for three permissions:
+MailRem needs three permissions. On first launch a setup window lists them, shows which ones are already allowed and has a button next to each one that asks for it or opens the right place in System Settings.
 
 | Permission | Why |
 |---|---|
@@ -50,9 +51,9 @@ On first launch macOS asks for three permissions:
 | Reminders | To read your lists and add reminders |
 | Automation (Mail) | To read the subject, sender and link of the selected message |
 
-The Mail prompt appears while Mail is running. If you did not see it, open Mail and bring it to the front once.
+macOS can only ask for the Mail permission while Mail is running, so the setup window offers to open Mail first.
 
-To change a permission later, open **System Settings > Privacy & Security** and look under **Accessibility**, **Reminders** or **Automation**.
+Choose **Permissions…** in the MailRem menu to open the setup window again. To change a permission by hand, open **System Settings > Privacy & Security** and look under **Accessibility**, **Reminders** or **Automation**.
 
 ## Privacy
 
@@ -67,6 +68,7 @@ MailRem works entirely on your Mac.
 
 - The link in a reminder opens the message on a Mac whose Mail has that message. It may stop working if the message is deleted.
 - Reminders sync through iCloud as usual, so they also appear on your iPhone and iPad. MailRem itself is for macOS only.
+- A due date is a day without a time. **Due Next Week** means the coming Monday.
 - The keyboard shortcut is fixed to Control-Option-R.
 
 ## Options

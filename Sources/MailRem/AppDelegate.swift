@@ -13,6 +13,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var clickTap: ClickTap?
     private var accessibilityTimer: Timer?
     private var didRequestMailPermission = false
+    private var didPromptForAccessibility = false
+
+    private lazy var setupWindow = SetupWindowController(
+        stateProvider: { [weak self] permission in self?.state(of: permission) ?? .unavailable },
+        actionHandler: { [weak self] permission, state in self?.resolve(permission, in: state) })
 
     // MARK: - Launch
 
@@ -27,13 +32,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self, selector: #selector(frontmostApplicationChanged),
             name: NSWorkspace.didActivateApplicationNotification, object: nil)
 
-        showWelcomeIfNeeded()
-
-        reminders.requestAccess { [weak self] granted in
-            let listCount = self?.reminders.lists().count ?? 0
-            log.notice("Reminders access granted: \(granted, privacy: .public), lists: \(listCount, privacy: .public)")
+        // Permissions are asked for from the setup window, one at a time, so
+        // nothing here shows a system prompt on its own.
+        let isFirstLaunch = !Settings.didShowWelcome
+        Settings.didShowWelcome = true
+        log.notice("Reminders access granted: \(self.reminders.hasAccess, privacy: .public), lists: \(self.reminders.lists().count, privacy: .public)")
+        startClickTap(promptIfNeeded: false)
+        if isFirstLaunch || needsSetup {
+            showSetup()
         }
-        startClickTap(promptIfNeeded: true)
         frontmostApplicationChanged()
         requestMailPermissionIfPossible()
 
@@ -42,26 +49,66 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updater.startAutomaticChecks()
     }
 
-    private func showWelcomeIfNeeded() {
-        guard !Settings.didShowWelcome else { return }
-        Settings.didShowWelcome = true
+    // MARK: - Permissions
 
-        let alert = NSAlert()
-        alert.messageText = "Welcome to MailRem"
-        alert.informativeText = """
-        MailRem lives in your menu bar and sends the selected Mail message to a Reminders list.
-
-        In Mail, hold Option and right-click a message, or press Control-Option-R, then pick a list.
-
-        macOS will now ask for three permissions: Accessibility (for the Option + right-click menu), \
-        Reminders, and permission to control Mail.
-        """
-        alert.addButton(withTitle: "Continue")
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
+    /// True when a permission MailRem cannot work without is missing.
+    private var needsSetup: Bool {
+        !reminders.hasAccess || (Settings.optionRightClickEnabled && !AXIsProcessTrusted())
     }
 
-    // MARK: - Permissions
+    @objc private func showSetup() {
+        setupWindow.show()
+    }
+
+    /// The state of a permission, for the setup window. `.mail` can block and
+    /// is asked for off the main thread.
+    private func state(of permission: Permission) -> PermissionState {
+        switch permission {
+        case .accessibility:
+            if AXIsProcessTrusted() { return .granted }
+            return didPromptForAccessibility ? .denied : .notDetermined
+        case .reminders:
+            return reminders.accessState
+        case .mail:
+            return mail.permissionState()
+        }
+    }
+
+    /// Asks for a permission, or opens the place where the user can grant it.
+    private func resolve(_ permission: Permission, in state: PermissionState) {
+        switch permission {
+        case .accessibility:
+            if didPromptForAccessibility {
+                openAccessibilitySettings()
+            } else {
+                // The system prompt also adds MailRem to the Accessibility list.
+                didPromptForAccessibility = true
+                startClickTap(promptIfNeeded: true)
+            }
+        case .reminders:
+            if state == .notDetermined {
+                reminders.requestAccess { [weak self] granted in
+                    log.notice("Reminders access granted: \(granted, privacy: .public)")
+                    self?.setupWindow.refresh()
+                }
+            } else {
+                openRemindersSettings()
+            }
+        case .mail:
+            switch state {
+            case .unavailable:
+                mail.launch()
+            case .notDetermined:
+                didRequestMailPermission = true
+                mail.requestPermission { [weak self] granted in
+                    log.notice("Mail automation permission granted: \(granted, privacy: .public)")
+                    self?.setupWindow.refresh()
+                }
+            case .denied, .granted:
+                openAutomationSettings()
+            }
+        }
+    }
 
     /// The Option + right-click menu needs the Accessibility permission. If it
     /// has not been granted yet, keep checking and start as soon as it is.
@@ -96,8 +143,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     /// macOS only asks for permission to control Mail when Mail is first
     /// contacted, so do that as early as possible instead of on first use.
+    /// While the setup window is open, its Mail row does this instead.
     private func requestMailPermissionIfPossible() {
-        guard !didRequestMailPermission, mail.isRunning else { return }
+        guard !didRequestMailPermission, mail.isRunning, !setupWindow.isVisible else { return }
         didRequestMailPermission = true
         mail.requestPermission { granted in
             log.notice("Mail automation permission granted: \(granted, privacy: .public)")
@@ -135,6 +183,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         mail.activate()
     }
 
+    /// Adds the Reminders lists to a menu. Choosing a list adds the reminder
+    /// without a date; the "Due ..." submenus add it with one.
     private func addListItems(to menu: NSMenu, header: String) {
         let headerItem = NSMenuItem(title: header, action: nil, keyEquivalent: "")
         headerItem.isEnabled = false
@@ -142,7 +192,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         guard reminders.hasAccess else {
             let item = NSMenuItem(title: "Allow Access to Reminders…",
-                                  action: #selector(openRemindersSettings), keyEquivalent: "")
+                                  action: #selector(showSetup), keyEquivalent: "")
             item.target = self
             menu.addItem(item)
             return
@@ -157,25 +207,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         for list in lists {
-            let item = NSMenuItem(title: list.title, action: #selector(sendToList(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = list.calendarIdentifier
-            item.image = Self.dot(color: list.color)
+            menu.addItem(listItem(for: list, due: nil))
+        }
+        menu.addItem(.separator())
+        for due in DueDate.allCases {
+            let item = NSMenuItem(title: due.title, action: nil, keyEquivalent: "")
+            item.image = NSImage(systemSymbolName: "calendar", accessibilityDescription: nil)
+            let submenu = NSMenu()
+            submenu.autoenablesItems = false
+            for list in lists {
+                submenu.addItem(listItem(for: list, due: due))
+            }
+            item.submenu = submenu
             menu.addItem(item)
         }
     }
 
+    private func listItem(for list: EKCalendar, due: DueDate?) -> NSMenuItem {
+        let item = NSMenuItem(title: list.title, action: #selector(sendToList(_:)), keyEquivalent: "")
+        item.target = self
+        item.representedObject = SendTarget(listIdentifier: list.calendarIdentifier, listName: list.title, due: due)
+        item.image = Self.dot(color: list.color)
+        return item
+    }
+
+    /// A colored dot on a canvas as wide as the menu's symbol images, so the
+    /// titles of all items line up.
     private static func dot(color: NSColor?) -> NSImage {
-        NSImage(size: NSSize(width: 10, height: 10), flipped: false) { rect in
+        NSImage(size: NSSize(width: 16, height: 16), flipped: false) { rect in
             (color ?? .secondaryLabelColor).setFill()
-            NSBezierPath(ovalIn: rect.insetBy(dx: 0.5, dy: 0.5)).fill()
+            NSBezierPath(ovalIn: rect.insetBy(dx: 3, dy: 3)).fill()
             return true
         }
     }
 
     @objc private func sendToList(_ sender: NSMenuItem) {
-        guard let identifier = sender.representedObject as? String else { return }
-        let listName = sender.title
+        guard let target = sender.representedObject as? SendTarget else { return }
+        let destination = [target.listName, target.due?.phrase].compactMap { $0 }.joined(separator: ", ")
 
         do {
             let messages = try mail.selectedMessages()
@@ -183,9 +251,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 HUD.shared.show("No message selected in Mail")
                 return
             }
-            let count = try reminders.add(messages, toListWithIdentifier: identifier)
+            let count = try reminders.add(messages, toListWithIdentifier: target.listIdentifier, due: target.due)
             log.notice("Added \(count, privacy: .public) reminder(s)")
-            HUD.shared.show(count == 1 ? "Added to \(listName)" : "\(count) messages added to \(listName)")
+            HUD.shared.show(count == 1 ? "Added to \(destination)" : "\(count) messages added to \(destination)")
         } catch MailError.notRunning {
             HUD.shared.show("Mail is not running")
         } catch MailError.notAuthorized {
@@ -240,9 +308,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         addListItems(to: menu, header: "Send Selected Message To")
         menu.addItem(.separator())
 
-        if !AXIsProcessTrusted() {
-            menu.addItem(makeItem("Allow Accessibility Access…", #selector(openAccessibilitySettings)))
-        }
         let rightClick = makeItem("Option + Right-Click Menu in Mail", #selector(toggleOptionRightClick))
         rightClick.state = Settings.optionRightClickEnabled ? .on : .off
         menu.addItem(rightClick)
@@ -254,6 +319,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let login = makeItem("Launch at Login", #selector(toggleLaunchAtLogin))
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
+
+        let permissions = makeItem("Permissions…", #selector(showSetup))
+        if needsSetup {
+            permissions.image = NSImage(systemSymbolName: "exclamationmark.triangle.fill",
+                                        accessibilityDescription: "Needs attention")
+        }
+        menu.addItem(permissions)
 
         menu.addItem(.separator())
         if updater.available == nil {
@@ -332,11 +404,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    @objc private func openAccessibilitySettings() {
+    private func openAccessibilitySettings() {
         openSettings("Privacy_Accessibility")
     }
 
-    @objc private func openRemindersSettings() {
+    private func openRemindersSettings() {
         openSettings("Privacy_Reminders")
     }
 
@@ -383,5 +455,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func quit() {
         NSApp.terminate(nil)
+    }
+}
+
+
+/// What a list item in the menu sends the selected message to.
+private final class SendTarget: NSObject {
+    let listIdentifier: String
+    let listName: String
+    let due: DueDate?
+
+    init(listIdentifier: String, listName: String, due: DueDate?) {
+        self.listIdentifier = listIdentifier
+        self.listName = listName
+        self.due = due
     }
 }
