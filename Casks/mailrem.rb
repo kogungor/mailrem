@@ -1,6 +1,6 @@
 cask "mailrem" do
-  version "2.1.0"
-  sha256 "ffcc4f2d92ba033f7945149a0ce784afe57e5727a9b29eb8915d27163b7cb1ba"
+  version "2.2.0"
+  sha256 "4e25b716f43061bddd25ad22ebe4e776c6a1ed8289632225c9157045f004efab"
 
   url "https://github.com/kogungor/mailrem/releases/download/v#{version}/MailRem-#{version}.dmg"
   name "MailRem"
