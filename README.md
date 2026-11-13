@@ -28,8 +28,11 @@ The app is signed and notarized by Apple, so it opens without a security warning
 
 ```bash
 brew tap kogungor/mailrem https://github.com/kogungor/mailrem
+brew trust kogungor/mailrem
 brew install --cask mailrem
 ```
+
+Recent versions of Homebrew only load casks from taps you have marked as trusted, which is what the second command does.
 
 ## Permissions
 
